@@ -11,6 +11,9 @@ import android.os.Build;
 import android.support.customtabs.CustomTabsIntent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -33,13 +36,14 @@ public class MainActivity extends AppCompatActivity {
 
     private WifiManager mainWifi;
     private Button btnRefresh;
-    ListAdapter adapter;
-    ListView lvWifiDetails;
     List<WifiBeacon> wifiList;
     List<ScanResult> scanResults;
     private int PERMISSIONS_REQUEST_CODE_ACCESS_COARSE_LOCATION = 101;
     private static final String URL_NOT_AVAIL = "Sorry nothing great with this beacon!";
-    private HashMap<String, String> urlMap;
+    private RecyclerView beaconRecyclerView;
+    private BeaconAdapter beaconAdapter;
+
+
 
     private static final List<String> urls = new ArrayList<String>() {{
         add("https://www.facebook.com/");
@@ -64,8 +68,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        lvWifiDetails = (ListView) findViewById(R.id.lvWifiDetails);
         btnRefresh = (Button) findViewById(R.id.btnRefresh);
+        beaconRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+        beaconRecyclerView.setLayoutManager(mLayoutManager);
+        beaconRecyclerView.setItemAnimator(new DefaultItemAnimator());
+
         mainWifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
         buildUrlMap();
@@ -92,17 +101,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void setAdapter() {
 
-        adapter = new com.example.yash.wifitest.ListAdapter(getApplicationContext(), wifiList);
-        lvWifiDetails.setAdapter(adapter);
+        beaconAdapter = new BeaconAdapter(wifiList);
+        beaconRecyclerView.setAdapter(beaconAdapter);
 
-        lvWifiDetails.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                WifiBeacon wifiBeacon = (WifiBeacon) lvWifiDetails.getItemAtPosition(i);
-                launchChromeTab(wifiBeacon.url);
-
-            }
-        });
     }
 
     private void launchChromeTab(String url) {
