@@ -4,9 +4,11 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.support.customtabs.CustomTabsIntent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -23,6 +25,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
+import saschpe.android.customtabs.CustomTabsActivityLifecycleCallbacks;
+import saschpe.android.customtabs.CustomTabsHelper;
+import saschpe.android.customtabs.WebViewFallback;
+
 public class MainActivity extends AppCompatActivity {
 
     private WifiManager mainWifi;
@@ -32,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     List<WifiBeacon> wifiList;
     List<ScanResult> scanResults;
     private int PERMISSIONS_REQUEST_CODE_ACCESS_COARSE_LOCATION = 101;
+    private static final String URL_NOT_AVAIL = "Sorry nothing great with this beacon!";
     private HashMap<String, String> urlMap;
 
     private static final List<String> urls = new ArrayList<String>() {{
@@ -92,10 +99,34 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 WifiBeacon wifiBeacon = (WifiBeacon) lvWifiDetails.getItemAtPosition(i);
-                Toast.makeText(getApplicationContext(),wifiBeacon.url,Toast.LENGTH_SHORT).show();
+                launchChromeTab(wifiBeacon.url);
 
             }
         });
+    }
+
+    private void launchChromeTab(String url) {
+
+        CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder()
+                .addDefaultShareMenuItem()
+                .setToolbarColor(this.getResources()
+                        .getColor(R.color.colorPrimary))
+                .setShowTitle(true)
+                .build();
+
+        // This is optional but recommended
+        CustomTabsHelper.addKeepAliveExtra(this, customTabsIntent.intent);
+
+        if(!url.equals(URL_NOT_AVAIL)){
+            // This is where the magic happens...
+            CustomTabsHelper.openCustomTab(this, customTabsIntent,
+                    Uri.parse(url),
+                    new WebViewFallback());
+        }
+        else {
+            Toast.makeText(getApplicationContext(),url,Toast.LENGTH_SHORT).show();
+        }
+
     }
 
     private void scanWifiList() {
@@ -121,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
                 wifiList.add(new WifiBeacon(sr,hashMap.get(sr.BSSID)));
             }
             else {
-                wifiList.add(new WifiBeacon(sr,"Sorry nothing great with this beacon!"));
+                wifiList.add(new WifiBeacon(sr,URL_NOT_AVAIL));
 
             }
 
