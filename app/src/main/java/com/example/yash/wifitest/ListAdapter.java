@@ -1,6 +1,8 @@
 package com.example.yash.wifitest;
 
 import java.util.List;
+
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.wifi.ScanResult;
 import android.view.LayoutInflater;
@@ -13,9 +15,9 @@ public class ListAdapter extends BaseAdapter {
 
     Context context;
     LayoutInflater inflater;
-    List<ScanResult> wifiList;
+    List<WifiBeacon> wifiList;
 
-    public ListAdapter(Context context, List<ScanResult> wifiList) {
+    public ListAdapter(Context context, List<WifiBeacon> wifiList) {
         this.context = context;
         this.wifiList = wifiList;
         inflater = (LayoutInflater) context
@@ -29,7 +31,7 @@ public class ListAdapter extends BaseAdapter {
 
     @Override
     public Object getItem(int position) {
-        return null;
+        return wifiList.get(position);
     }
 
     @Override
@@ -37,6 +39,7 @@ public class ListAdapter extends BaseAdapter {
         return 0;
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         Holder holder;
@@ -51,9 +54,9 @@ public class ListAdapter extends BaseAdapter {
         } else {
             holder = (Holder) view.getTag();
         }
-        holder.tvDetails.setText("SSID :: " + wifiList.get(position).SSID
-                + "\nStrength :: " + wifiList.get(position).level
-                + "\nBSSID :: " + wifiList.get(position).BSSID);
+        holder.tvDetails.setText("SSID :: " + wifiList.get(position).scanResult.SSID
+                + "\nStrength :: " + wifiList.get(position).scanResult.level
+                + "\nBSSID :: " + wifiList.get(position).scanResult.BSSID);
 
         return view;
     }

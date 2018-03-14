@@ -1,10 +1,7 @@
 package com.example.yash.wifitest;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
@@ -14,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -31,7 +29,8 @@ public class MainActivity extends AppCompatActivity {
     private Button btnRefresh;
     ListAdapter adapter;
     ListView lvWifiDetails;
-    List wifiList;
+    List<WifiBeacon> wifiList;
+    List<ScanResult> scanResults;
     private int PERMISSIONS_REQUEST_CODE_ACCESS_COARSE_LOCATION = 101;
     private HashMap<String, String> urlMap;
 
@@ -44,22 +43,14 @@ public class MainActivity extends AppCompatActivity {
 
     }};
 
+    private static final List<String> bssids = new ArrayList<String>() {{
+        add("b8:86:87:45:dc:ed");
+        add("86:a6:c8:29:2f:43");
+        add("28:56:5a:02:9c:b7");
+        add("94:44:52:da:9d:e2");
+        add("78:0c:b8:6f:92:44");
 
-    private HashMap<String, String> loadMap(){
-        SharedPreferences pref = getApplicationContext().getSharedPreferences("Your_Shared_Prefs", Context.MODE_PRIVATE);
-        HashMap<String, String> map= (HashMap<String, String>) pref.getAll();
-
-        return map;
-    }
-
-    private void addToMap(String url, String ssid){
-
-        SharedPreferences pref = getApplicationContext().getSharedPreferences("Your_Shared_Prefs", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = pref.edit();
-        editor.putString(ssid,url);
-        editor.commit();
-    }
-
+    }};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,11 +59,9 @@ public class MainActivity extends AppCompatActivity {
 
         lvWifiDetails = (ListView) findViewById(R.id.lvWifiDetails);
         btnRefresh = (Button) findViewById(R.id.btnRefresh);
-
         mainWifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        /*receiverWifi = new WifiReceiver();
-        registerReceiver(receiverWifi, new IntentFilter(
-                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));*/
+
+        buildUrlMap();
 
         seekPermissionsandScan();
 
@@ -87,23 +76,62 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void buildUrlMap() {
+
+        for(int i = 0; i< bssids.size(); i++){
+            addToMap(bssids.get(i),urls.get(i));
+        }
+    }
+
     private void setAdapter() {
+
         adapter = new com.example.yash.wifitest.ListAdapter(getApplicationContext(), wifiList);
         lvWifiDetails.setAdapter(adapter);
+
+        lvWifiDetails.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                WifiBeacon wifiBeacon = (WifiBeacon) lvWifiDetails.getItemAtPosition(i);
+                Toast.makeText(getApplicationContext(),wifiBeacon.url,Toast.LENGTH_SHORT).show();
+
+            }
+        });
     }
 
     private void scanWifiList() {
         mainWifi.startScan();
-        wifiList = mainWifi.getScanResults();
-        sortList();
+        scanResults = mainWifi.getScanResults();
+        sortList(6);
+        detectBeacons();
         Log.i("TAG", "scanWifiList: " + wifiList.toString());
         setAdapter();
 
     }
 
-    private void sortList() {
-        Collections.sort(wifiList, new SortByLevel());
-        wifiList = wifiList.subList(0,5);
+    private void detectBeacons() {
+        //check the SSIDs which are available in the shared-prefs
+        //create the list of WifiBeacons merging ScanResult and respective urls.
+        HashMap<String, String> hashMap = loadMap();
+        wifiList = new ArrayList<>();
+
+        for(int i = 0; i < scanResults.size(); i++){
+            ScanResult sr = scanResults.get(i);
+
+            if(hashMap.containsKey(sr.BSSID)){
+                wifiList.add(new WifiBeacon(sr,hashMap.get(sr.BSSID)));
+            }
+            else {
+                wifiList.add(new WifiBeacon(sr,"Sorry nothing great with this beacon!"));
+
+            }
+
+        }
+
+    }
+
+    private void sortList(int c) {
+        Collections.sort(scanResults, new SortByLevel());
+        scanResults = scanResults.subList(0,c);
 
     }
 
@@ -141,7 +169,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private HashMap<String, String> loadMap(){
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("Your_Shared_Prefs", Context.MODE_PRIVATE);
+        HashMap<String, String> map= (HashMap<String, String>) pref.getAll();
 
+        return map;
+    }
+
+    private void addToMap(String bssid, String url){
+
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("Your_Shared_Prefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString(bssid,url);
+        editor.commit();
+    }
 
 
 }
