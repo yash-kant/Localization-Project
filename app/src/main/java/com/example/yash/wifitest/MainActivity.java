@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -18,19 +19,47 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private WifiManager mainWifi;
-    private WifiReceiver receiverWifi;
     private Button btnRefresh;
     ListAdapter adapter;
     ListView lvWifiDetails;
     List wifiList;
     private int PERMISSIONS_REQUEST_CODE_ACCESS_COARSE_LOCATION = 101;
+    private HashMap<String, String> urlMap;
+
+    private static final List<String> urls = new ArrayList<String>() {{
+        add("https://www.facebook.com/");
+        add("https://www.youtube.com");
+        add("https://www.google.co.in");
+        add("https://stackoverflow.com/users/5769505/yash-kant");
+        add("https://github.com/yashkant");
+
+    }};
+
+
+    private HashMap<String, String> loadMap(){
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("Your_Shared_Prefs", Context.MODE_PRIVATE);
+        HashMap<String, String> map= (HashMap<String, String>) pref.getAll();
+
+        return map;
+    }
+
+    private void addToMap(String url, String ssid){
+
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("Your_Shared_Prefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString(ssid,url);
+        editor.commit();
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,9 +70,9 @@ public class MainActivity extends AppCompatActivity {
         btnRefresh = (Button) findViewById(R.id.btnRefresh);
 
         mainWifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        receiverWifi = new WifiReceiver();
+        /*receiverWifi = new WifiReceiver();
         registerReceiver(receiverWifi, new IntentFilter(
-                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));*/
 
         seekPermissionsandScan();
 
@@ -75,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
     private void sortList() {
         Collections.sort(wifiList, new SortByLevel());
         wifiList = wifiList.subList(0,5);
+
     }
 
     class SortByLevel implements Comparator<ScanResult>
@@ -111,8 +141,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class WifiReceiver extends BroadcastReceiver {
-        public void onReceive(Context c, Intent intent) {
-        }
-    }
+
+
+
 }
