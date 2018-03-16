@@ -1,5 +1,8 @@
 package com.example.yash.wifitest;
 
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.provider.Settings;
 import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -9,11 +12,15 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.support.customtabs.CustomTabsIntent;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -42,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String URL_NOT_AVAIL = "Sorry nothing great with this beacon!";
     private RecyclerView beaconRecyclerView;
     private BeaconAdapter beaconAdapter;
+    private final static int REQUEST_ENABLE_LOCATION = 2;
+    private final static int REQUEST_ENABLE_FINE_LOCATION = 3;
 
 
 
@@ -78,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
         mainWifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
         buildUrlMap();
-
+//        checkPermissions();
         seekPermissionsandScan();
 
         btnRefresh.setOnClickListener(new View.OnClickListener() {
@@ -162,6 +171,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sortList(int c) {
+        if(c > scanResults.size()-1) c = scanResults.size()-1;
+
         Collections.sort(scanResults, new SortByLevel());
         scanResults = scanResults.subList(0,c);
 
@@ -177,13 +188,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void seekPermissionsandScan(){
+
+        WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiManager.setWifiEnabled(true);
+
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
                     PERMISSIONS_REQUEST_CODE_ACCESS_COARSE_LOCATION);
             //After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
 
         }else{
-            scanWifiList();
+            checkPermissions();
             //do something, permission was previously granted; or legacy device
         }
     }
@@ -193,11 +208,14 @@ public class MainActivity extends AppCompatActivity {
                                            int[] grantResults) {
         if (requestCode == PERMISSIONS_REQUEST_CODE_ACCESS_COARSE_LOCATION
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            scanWifiList();
         }
 
         else{
             Toast.makeText(getApplicationContext(),"Permission Required",Toast.LENGTH_SHORT).show();
+        }
+
+        if (requestCode != REQUEST_ENABLE_FINE_LOCATION || grantResults.length <= 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this,"Please accept the Runtime Permission", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -217,4 +235,85 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private void checkPermissions()
+    {
+
+
+        //Turn Location Settings On
+        if(!isLocationEnabled(getApplicationContext()))
+        {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Location Settings").setMessage("Please Turn on Location Settings to proceed further.").setPositiveButton("Ok",new DialogInterface.OnClickListener(){
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+
+                    Intent ii = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivityForResult(ii,REQUEST_ENABLE_LOCATION);
+
+                }
+            }).show();
+        }
+        else {
+            //Runtime Permission
+            if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED))
+            {
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},REQUEST_ENABLE_FINE_LOCATION);
+            }
+
+            scanWifiList();
+
+        }
+
+
+
+    }
+
+    public static boolean isLocationEnabled(Context context) {
+        int locationMode = 0;
+        String locationProviders;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
+            try {
+                locationMode = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+
+            return locationMode != Settings.Secure.LOCATION_MODE_OFF;
+
+        }else{
+            locationProviders = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+            return !TextUtils.isEmpty(locationProviders);
+        }
+
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        switch (requestCode){
+
+            case REQUEST_ENABLE_LOCATION:
+            {
+                if(!isLocationEnabled(getApplicationContext()))
+                    Toast.makeText(this, "Location is required!", Toast.LENGTH_SHORT).show();
+                else
+                {
+                    Toast.makeText(this, "Location is granted!", Toast.LENGTH_SHORT).show();
+                    scanWifiList();
+                }
+
+            }
+
+            default:{
+                scanWifiList();
+            }
+
+        }
+
+        super.onActivityResult(requestCode, resultCode, data);
+    }
 }
+

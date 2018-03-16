@@ -38,7 +38,7 @@ public class BeaconAdapter extends RecyclerView.Adapter<BeaconAdapter.BeaconView
 
         holder.name.setText(wifiBeacon.scanResult.SSID);
         holder.url.setText(wifiBeacon.url);
-        holder.distance.setText(wifiBeacon.scanResult.level);
+//        holder.distance.setText(wifiBeacon.scanResult.level);
 
     }
 
