@@ -10,10 +10,12 @@ public class WifiBeacon {
 
     public final ScanResult scanResult;
     public final String url;
+    public final String eventName;
 
-    WifiBeacon(ScanResult scanResult, String url) {
+    WifiBeacon(ScanResult scanResult, String url, String eventName) {
 
         this.scanResult = scanResult;
         this.url = url;
+        this.eventName = eventName;
     }
 }

@@ -2,7 +2,6 @@ package com.example.yash.wifitest;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -17,15 +16,17 @@ public class BeaconAdapter extends RecyclerView.Adapter<BeaconAdapter.BeaconView
 
 
     private List<WifiBeacon> wifiList;
+    private MainActivity mainActivity;
 
-    public BeaconAdapter(List<WifiBeacon> wifiList) {
+    public BeaconAdapter(List<WifiBeacon> wifiList, MainActivity mainActivity) {
 
         this.wifiList = wifiList;
+        this.mainActivity = mainActivity;
     }
 
     @Override
     public BeaconViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View itemView = LayoutInflater.from(parent.getContext())
+        final View itemView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.beacon_list_row,parent,false);
 
         return new BeaconViewHolder(itemView);
@@ -35,11 +36,9 @@ public class BeaconAdapter extends RecyclerView.Adapter<BeaconAdapter.BeaconView
     public void onBindViewHolder(BeaconViewHolder holder, int position) {
 
         WifiBeacon wifiBeacon = wifiList.get(position);
-
-        holder.name.setText(wifiBeacon.scanResult.SSID);
+        holder.name.setText(wifiBeacon.eventName);
         holder.url.setText(wifiBeacon.url);
-//        holder.distance.setText(wifiBeacon.scanResult.level);
-
+        holder.distance.setText(String.valueOf(wifiBeacon.scanResult.level));
     }
 
     @Override
@@ -56,6 +55,13 @@ public class BeaconAdapter extends RecyclerView.Adapter<BeaconAdapter.BeaconView
             name = itemView.findViewById(R.id.title);
             url = itemView.findViewById(R.id.url);
             distance = itemView.findViewById(R.id.dist);
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                    mainActivity.launchChromeTab(url.getText().toString());
+                }
+            });
 
         }
     }

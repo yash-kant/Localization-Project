@@ -23,10 +23,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.ListAdapter;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -35,7 +32,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
-import saschpe.android.customtabs.CustomTabsActivityLifecycleCallbacks;
 import saschpe.android.customtabs.CustomTabsHelper;
 import saschpe.android.customtabs.WebViewFallback;
 
@@ -60,6 +56,10 @@ public class MainActivity extends AppCompatActivity {
         add("https://www.google.co.in");
         add("https://stackoverflow.com/users/5769505/yash-kant");
         add("https://github.com/yashkant");
+        add("https://www.facebook.com/iitrsrishti/");
+        add("https://www.facebook.com/ariesiitr/");
+        add("https://www.facebook.com/ariesiitr/videos/1579031718852021/");
+
 
     }};
 
@@ -69,6 +69,24 @@ public class MainActivity extends AppCompatActivity {
         add("28:56:5a:02:9c:b7");
         add("94:44:52:da:9d:e2");
         add("78:0c:b8:6f:92:44");
+        add("1a:fe:34:a5:62:a1");
+        add("5e:cf:7f:ac:b3:cd");
+        add("d8:5d:e2:05:2b:53");
+
+
+    }};
+
+    public static final List<String> names = new ArrayList<String>() {{
+
+        add("Facebook Bro!");
+        add("Youthub Bro!");
+        add("Google kar le bro!");
+        add("Coder ban ja bro!");
+        add("LOL!");
+        add("Welcome to Srishti");
+        add("Welcome to ARIES");
+        add("Workshop!");
+
 
     }};
 
@@ -105,17 +123,18 @@ public class MainActivity extends AppCompatActivity {
 
         for(int i = 0; i< bssids.size(); i++){
             addToMap(bssids.get(i),urls.get(i));
+            addToMap(bssids.get(i)+"hi", names.get(i));
         }
     }
 
     private void setAdapter() {
 
-        beaconAdapter = new BeaconAdapter(wifiList);
+        beaconAdapter = new BeaconAdapter(wifiList, this);
         beaconRecyclerView.setAdapter(beaconAdapter);
 
     }
 
-    private void launchChromeTab(String url) {
+    public void launchChromeTab(String url) {
 
         CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder()
                 .addDefaultShareMenuItem()
@@ -147,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i("TAG", "scanWifiList: " + wifiList.toString());
         setAdapter();
 
+
     }
 
     private void detectBeacons() {
@@ -159,12 +179,13 @@ public class MainActivity extends AppCompatActivity {
             ScanResult sr = scanResults.get(i);
 
             if(hashMap.containsKey(sr.BSSID)){
-                wifiList.add(new WifiBeacon(sr,hashMap.get(sr.BSSID)));
+                wifiList.add(new WifiBeacon(sr,hashMap.get(sr.BSSID), hashMap.get(sr.BSSID + "hi")));
             }
-            else {
+
+            /*else {
                 wifiList.add(new WifiBeacon(sr,URL_NOT_AVAIL));
 
-            }
+            }*/
 
         }
 
@@ -175,7 +196,25 @@ public class MainActivity extends AppCompatActivity {
 
         Collections.sort(scanResults, new SortByLevel());
         scanResults = scanResults.subList(0,c);
+        thresholdResults(-55);
+        Log.i("TAG",scanResults.toString());
 
+
+    }
+
+    private void thresholdResults(int t) {
+
+        ArrayList<ScanResult> sr = new ArrayList<>();
+
+        for(int i = 0 ; i < scanResults.size(); i++){
+
+            if(scanResults.get(i).level > t){
+                sr.add(scanResults.get(i));
+            }
+
+        }
+
+        scanResults = sr;
     }
 
     class SortByLevel implements Comparator<ScanResult>
